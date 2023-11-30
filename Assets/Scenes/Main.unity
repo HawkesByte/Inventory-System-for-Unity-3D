@@ -360,11 +360,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 132107293}
+  - component: {fileID: 132107295}
   - component: {fileID: 132107292}
   - component: {fileID: 132107291}
   - component: {fileID: 132107290}
   - component: {fileID: 132107294}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Test Item 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -484,6 +485,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &132107295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 132107289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3744f7e63525d2e4286f111f58dd4fdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Item 2
+  icon: {fileID: 0}
 --- !u!1 &139694917
 GameObject:
   m_ObjectHideFlags: 0
@@ -2485,11 +2500,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1135360937}
+  - component: {fileID: 1135360939}
   - component: {fileID: 1135360936}
   - component: {fileID: 1135360935}
   - component: {fileID: 1135360934}
   - component: {fileID: 1135360938}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Test Item 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2609,6 +2625,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1135360939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1135360933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3744f7e63525d2e4286f111f58dd4fdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Item 1
+  icon: {fileID: 0}
 --- !u!1 &1144631786
 GameObject:
   m_ObjectHideFlags: 0
@@ -3132,7 +3162,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5241267463746980526, guid: f2e0b7ae4dae8cf44955bccd3512b213, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 1459876323}
   m_SourcePrefab: {fileID: 100100000, guid: f2e0b7ae4dae8cf44955bccd3512b213, type: 3}
 --- !u!1 &1348838000
 GameObject:
@@ -3286,6 +3319,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1409865493}
   m_CullTransparentMesh: 1
+--- !u!1 &1459876318 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5241267463746980526, guid: f2e0b7ae4dae8cf44955bccd3512b213, type: 3}
+  m_PrefabInstance: {fileID: 1347140411}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1459876323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1459876318}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbda34be039519e45b28655eaa63bcb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  items: []
+  inventorySpace: 10
+  itemLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  pickUpDistance: 5
 --- !u!1 &1469642551
 GameObject:
   m_ObjectHideFlags: 0
@@ -3638,11 +3694,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1832034600}
+  - component: {fileID: 1832034602}
   - component: {fileID: 1832034599}
   - component: {fileID: 1832034598}
   - component: {fileID: 1832034597}
   - component: {fileID: 1832034601}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Test Item 4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3762,6 +3819,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1832034602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1832034596}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3744f7e63525d2e4286f111f58dd4fdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Item 4
+  icon: {fileID: 0}
 --- !u!1 &1871186183
 GameObject:
   m_ObjectHideFlags: 0
@@ -3847,11 +3918,12 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1909817984}
+  - component: {fileID: 1909817986}
   - component: {fileID: 1909817983}
   - component: {fileID: 1909817982}
   - component: {fileID: 1909817981}
   - component: {fileID: 1909817985}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Test Item 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3971,6 +4043,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1909817986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1909817980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3744f7e63525d2e4286f111f58dd4fdb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemName: Item 3
+  icon: {fileID: 0}
 --- !u!1 &1991867180
 GameObject:
   m_ObjectHideFlags: 0
