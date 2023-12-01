@@ -1,21 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Inventory : MonoBehaviour
 {
-    public List<Item> inventorySlots = new List<Item>();
-    public int inventorySpace = 10;
+    public List<Item> heldItems = new List<Item>();
+    private int inventorySpace = 0;
     public float pickUpDistance = 5f;
     public LayerMask itemLayer;
 
     [Header("UI")]
     public GameObject inventoryUI;
+    public List<Image> inventorySlots = new List<Image>();
+
+    public int currentHoveredSlot;
 
     private void Start()
     {
         toggleMouseLock();
+        inventorySpace = inventorySlots.Count;
     }
 
     private void Update()
@@ -32,6 +37,7 @@ public class Inventory : MonoBehaviour
                 if (item)
                 {
                     addItem(item);
+                    updateInventory();
                 }
             }
         }
@@ -39,6 +45,11 @@ public class Inventory : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.I))
         {
             displayInventory();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q) && currentHoveredSlot != -1)
+        {
+            dropItem();
         }
     }
 
@@ -48,9 +59,9 @@ public class Inventory : MonoBehaviour
         bool itemProcessed = false;
 
         // Loop through all slots
-        for (int i = 0; i < inventorySlots.Count; i++)
+        for (int i = 0; i < heldItems.Count; i++)
         {
-            Item invSlot = inventorySlots[i];
+            Item invSlot = heldItems[i];
 
             // Check if the slot holds an item with the same name as newItem
             if (invSlot != null && newItem.itemName == invSlot.itemName)
@@ -79,21 +90,31 @@ public class Inventory : MonoBehaviour
 
         // If there is left over quantity, try to add it to a new slot
 
-        if (inventorySlots.Count < inventorySpace)
+        if (heldItems.Count < inventorySpace)
         {
-            inventorySlots.Add(null); // Create a new space
+            heldItems.Add(null); // Create a new space
         }
 
-        for (int i = 0; i < inventorySlots.Count; i++)
+        for (int i = 0; i < heldItems.Count; i++)
         {
-            if (inventorySlots[i] == null)
+            if (heldItems[i] == null)
             {
                 // Add to the empty slot
-                inventorySlots[i] = newItem;
-                inventorySlots[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
+                heldItems[i] = newItem;
+                heldItems[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
 
-                Debug.Log("Added " + inventorySlots[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
+                Debug.Log("Added " + heldItems[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
                 newItem.gameObject.SetActive(false); // Object is taking over the new slot. Must keep.
+
+                for (int a = 0; a < inventorySlots.Count; a++)
+                {
+                    if (inventorySlots[a].sprite == null)
+                    {
+                        newItem.uiSlotIndex = a;
+                        break;
+                    }
+                }
+
                 itemProcessed = true;
                 break;
             }
@@ -108,13 +129,32 @@ public class Inventory : MonoBehaviour
         Debug.Log("Couldn't fit item into inventory");
     }
 
+    private void dropItem()
+    {
+        Item itemToDrop = heldItems.Find(item => item != null && item.uiSlotIndex == currentHoveredSlot);
+        itemToDrop.gameObject.SetActive(true);
+        itemToDrop.transform.position = new Vector3(transform.position.x + 2f, transform.position.y + 2f, transform.position.z);
+
+        heldItems.Remove(itemToDrop);
+        inventorySlots[currentHoveredSlot].sprite = null;
+        inventorySlots[currentHoveredSlot].enabled = false;
+    }
+
     private void displayInventory()
     {
-        foreach (Item invSlot in inventorySlots)
+        inventoryUI.SetActive(!inventoryUI.activeInHierarchy);
+        toggleMouseLock();
+    }
+
+    private void updateInventory()
+    {
+        for (int i = 0; i < heldItems.Count; i++)
         {
-            if (invSlot != null)
+            if (heldItems != null)
             {
-                Debug.Log(invSlot.itemName + " | Quantity: " + invSlot.currentQuantity);
+                Item invSlot = heldItems[i];
+                inventorySlots[invSlot.uiSlotIndex].sprite = invSlot.icon;
+                inventorySlots[invSlot.uiSlotIndex].enabled = true;
             }
         }
     }
@@ -127,10 +167,12 @@ public class Inventory : MonoBehaviour
         if (Cursor.lockState == CursorLockMode.Locked)
         {
             Cursor.lockState = CursorLockMode.None;
+            transform.GetChild(0).GetComponent<FirstPersonLook>().sensitivity = 0;
         }
         else
         {
             Cursor.lockState = CursorLockMode.Locked;
+            transform.GetChild(0).GetComponent<FirstPersonLook>().sensitivity = 2;
         }
     }
 }
