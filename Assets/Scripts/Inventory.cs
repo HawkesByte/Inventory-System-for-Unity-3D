@@ -25,6 +25,7 @@ public class Inventory : MonoBehaviour
     public int hotbarSlotCount = 7; // Equal to the number of hotbar slots we have (Max 9).
     public List<GameObject> heldItemModels = new List<GameObject>();
     public Image selectedHotbarIcon;
+    private int activeHotbarSlot;
 
     private void Start()
     {
@@ -91,6 +92,30 @@ public class Inventory : MonoBehaviour
                 activateHotbarItem(i);
             }
         }
+
+        float scrollWheelInput = Input.GetAxis("Mouse ScrollWheel");
+        if (scrollWheelInput > 0f)
+        {
+            // Scroll up, activate next hotbar item
+            activateNextHotbarItem();
+        }
+        else if (scrollWheelInput < 0f)
+        {
+            // Scroll down, activate previous hotbar item
+            activatePreviousHotbarItem();
+        }
+    }
+
+    private void activateNextHotbarItem()
+    {
+        activeHotbarSlot = (activeHotbarSlot % hotbarSlotCount) + 1;
+        activateHotbarItem(activeHotbarSlot);
+    }
+
+    private void activatePreviousHotbarItem()
+    {
+        activeHotbarSlot = ((activeHotbarSlot - 2 + hotbarSlotCount) % hotbarSlotCount) + 1;
+        activateHotbarItem(activeHotbarSlot);
     }
 
     private void addItem(Item newItem)
