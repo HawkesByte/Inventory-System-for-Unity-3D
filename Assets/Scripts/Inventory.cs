@@ -1,13 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Inventory : MonoBehaviour
 {
     public List<Item> inventorySlots = new List<Item>();
     public int inventorySpace = 10;
-    public LayerMask itemLayer;
     public float pickUpDistance = 5f;
+    public LayerMask itemLayer;
+
+    [Header("UI")]
+    public GameObject inventoryUI;
 
     private void Start()
     {
@@ -74,23 +78,27 @@ public class Inventory : MonoBehaviour
         if (itemProcessed) return;
 
         // If there is left over quantity, try to add it to a new slot
-        if (leftOverQuantity != 0)
-        {
-            for (int i = 0; i < inventorySlots.Count; i++)
-            {
-                if (inventorySlots[i] == null)
-                {
-                    // Add to the empty slot
-                    inventorySlots[i] = newItem;
-                    inventorySlots[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
 
-                    Debug.Log("Added " + inventorySlots[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
-                    newItem.gameObject.SetActive(false); // Object is taking over the new slot. Must keep.
-                    itemProcessed = true;
-                    break;
-                }
+        if (inventorySlots.Count < inventorySpace)
+        {
+            inventorySlots.Add(null); // Create a new space
+        }
+
+        for (int i = 0; i < inventorySlots.Count; i++)
+        {
+            if (inventorySlots[i] == null)
+            {
+                // Add to the empty slot
+                inventorySlots[i] = newItem;
+                inventorySlots[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
+
+                Debug.Log("Added " + inventorySlots[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
+                newItem.gameObject.SetActive(false); // Object is taking over the new slot. Must keep.
+                itemProcessed = true;
+                break;
             }
         }
+
 
         // If the item has been processed, exit the method
         if (itemProcessed) return;
