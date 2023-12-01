@@ -15,7 +15,11 @@ public class Inventory : MonoBehaviour
     public GameObject inventoryUI;
     public List<Image> inventorySlots = new List<Image>();
 
-    public int currentHoveredSlot;
+    public int currentHoveredSlot = -1;
+
+    // Drag and Drop
+    private int previousSlotIndex = -1;
+    public Image dragDropUIImage;
 
     private void Start()
     {
@@ -25,6 +29,8 @@ public class Inventory : MonoBehaviour
 
     private void Update()
     {
+        dragDropUIImage.transform.position = Input.mousePosition;
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
@@ -43,13 +49,27 @@ public class Inventory : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.I))
-        {
             displayInventory();
-        }
 
         if (Input.GetKeyDown(KeyCode.Q) && currentHoveredSlot != -1)
         {
-            dropItem();
+            if (inventorySlots[currentHoveredSlot].sprite != null)
+            {
+                dropItem();
+            }
+        }
+
+        if (Input.GetMouseButtonDown(0) && currentHoveredSlot != -1)
+        {
+            if (inventorySlots[currentHoveredSlot].sprite != null)
+            {
+                dragUIItem();
+                previousSlotIndex = currentHoveredSlot;
+            }
+        }
+        else if (Input.GetMouseButtonUp(0) && previousSlotIndex != -1)
+        {
+            dropUIItem();
         }
     }
 
@@ -137,7 +157,7 @@ public class Inventory : MonoBehaviour
 
         heldItems.Remove(itemToDrop);
         inventorySlots[currentHoveredSlot].sprite = null;
-        inventorySlots[currentHoveredSlot].enabled = false;
+        inventorySlots[currentHoveredSlot].color = new Color(1,1,1,0);
     }
 
     private void displayInventory()
@@ -154,11 +174,75 @@ public class Inventory : MonoBehaviour
             {
                 Item invSlot = heldItems[i];
                 inventorySlots[invSlot.uiSlotIndex].sprite = invSlot.icon;
-                inventorySlots[invSlot.uiSlotIndex].enabled = true;
+                inventorySlots[invSlot.uiSlotIndex].color = new Color(1, 1, 1, 1);
             }
         }
     }
 
+    private void dragUIItem()
+    {
+        dragDropUIImage.enabled = true;
+        dragDropUIImage.sprite = inventorySlots[currentHoveredSlot].sprite;
+        inventorySlots[currentHoveredSlot].sprite = null;
+        inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 0);
+    }
+
+    private void dropUIItem()
+    {
+        if (currentHoveredSlot != -1)
+        {
+            if (inventorySlots[currentHoveredSlot].sprite != null) // Swap items
+            {
+                Item curItem = getCurrentItemFromInventoryIndex(previousSlotIndex);
+                Item swapItem = getCurrentItemFromInventoryIndex(currentHoveredSlot);
+
+                inventorySlots[previousSlotIndex].sprite = inventorySlots[currentHoveredSlot].sprite;
+                inventorySlots[previousSlotIndex].color = new Color(1, 1, 1, 1);
+
+                inventorySlots[currentHoveredSlot].sprite = dragDropUIImage.sprite;
+                inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 1);
+
+                curItem.uiSlotIndex = currentHoveredSlot;
+                swapItem.uiSlotIndex = previousSlotIndex;
+
+                dragDropUIImage.sprite = null;
+                dragDropUIImage.enabled = false;
+            }
+            else // Drop Item
+            {
+                inventorySlots[currentHoveredSlot].sprite = dragDropUIImage.sprite;
+                inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 1);
+                dragDropUIImage.sprite = null;
+                dragDropUIImage.enabled = false;
+
+                Item curItem = getCurrentItemFromInventoryIndex(previousSlotIndex);
+                curItem.uiSlotIndex = currentHoveredSlot;
+            }
+        }
+        else // Return Item
+        {
+            inventorySlots[previousSlotIndex].sprite = dragDropUIImage.sprite;
+            inventorySlots[previousSlotIndex].color = new Color(1, 1, 1, 1);
+            dragDropUIImage.sprite = null;
+            dragDropUIImage.enabled = false;
+        }
+
+        previousSlotIndex = -1;
+        updateInventory();
+    }
+
+    private Item getCurrentItemFromInventoryIndex(int curInvIndex)
+    {
+        foreach (Item i in heldItems)
+        {
+            if (i.uiSlotIndex == curInvIndex)
+            {
+                return i;
+            }
+        }
+
+        return null;
+    }
 
     private void toggleMouseLock()
     {
