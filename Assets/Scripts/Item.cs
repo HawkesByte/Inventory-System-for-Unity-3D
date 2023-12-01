@@ -8,4 +8,6 @@ public class Item : MonoBehaviour
     public int maxQuantity = 12;
 
     public int uiSlotIndex;
+
+    public int handIndex = -1;
 }

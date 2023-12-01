@@ -17,9 +17,14 @@ public class Inventory : MonoBehaviour
 
     public int currentHoveredSlot = -1;
 
-    // Drag and Drop
-    private int previousSlotIndex = -1;
+    [Header("DragAndDrop")]
     public Image dragDropUIImage;
+    private int previousSlotIndex = -1;
+
+    [Header("Hotbar")]
+    public int hotbarSlotCount = 7; // Equal to the number of hotbar slots we have (Max 9).
+    public List<GameObject> heldItemModels = new List<GameObject>();
+    public Image selectedHotbarIcon;
 
     private void Start()
     {
@@ -49,9 +54,16 @@ public class Inventory : MonoBehaviour
         }
 
         if (Input.GetKeyDown(KeyCode.I))
+        {
             displayInventory();
 
-        if (Input.GetKeyDown(KeyCode.Q) && currentHoveredSlot != -1)
+            if (previousSlotIndex != -1) // Bug fix, cant close inventory while dragging an item.
+            {
+                HandleDragAndDrop();
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q) && currentHoveredSlot != -1) // Drop item.
         {
             if (inventorySlots[currentHoveredSlot].sprite != null)
             {
@@ -59,7 +71,7 @@ public class Inventory : MonoBehaviour
             }
         }
 
-        if (Input.GetMouseButtonDown(0) && currentHoveredSlot != -1)
+        if (Input.GetMouseButtonDown(0) && currentHoveredSlot != -1) // Drag and Drop
         {
             if (inventorySlots[currentHoveredSlot].sprite != null)
             {
@@ -70,6 +82,14 @@ public class Inventory : MonoBehaviour
         else if (Input.GetMouseButtonUp(0) && previousSlotIndex != -1)
         {
             HandleDragAndDrop();
+        }
+
+        for (int i = 1; i <= hotbarSlotCount; i++)
+        {
+            if (Input.GetKeyDown(i.ToString()))
+            {
+                activateHotbarItem(i);
+            }
         }
     }
 
@@ -158,6 +178,8 @@ public class Inventory : MonoBehaviour
         heldItems.Remove(itemToDrop);
         inventorySlots[currentHoveredSlot].sprite = null;
         inventorySlots[currentHoveredSlot].color = new Color(1,1,1,0);
+
+        updateInventory();
     }
 
     private void displayInventory()
@@ -168,13 +190,19 @@ public class Inventory : MonoBehaviour
 
     private void updateInventory()
     {
+        foreach (Image a in inventorySlots)
+        {
+            a.transform.GetChild(0).GetComponent<Text>().text = "";
+        }
+
         for (int i = 0; i < heldItems.Count; i++)
         {
-            if (heldItems != null)
+            Item invSlot = heldItems[i];
+            if (invSlot != null)
             {
-                Item invSlot = heldItems[i];
                 inventorySlots[invSlot.uiSlotIndex].sprite = invSlot.icon;
                 inventorySlots[invSlot.uiSlotIndex].color = new Color(1, 1, 1, 1);
+                inventorySlots[invSlot.uiSlotIndex].transform.GetChild(0).GetComponent<Text>().text = invSlot.currentQuantity.ToString();
             }
         }
     }
@@ -281,6 +309,26 @@ public class Inventory : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.Locked;
             transform.GetChild(0).GetComponent<FirstPersonLook>().sensitivity = 2;
+        }
+    }
+
+    private void activateHotbarItem(int itemIndex)
+    {
+        foreach (GameObject a in heldItemModels)
+        {
+            a.SetActive(false);
+        }
+
+        selectedHotbarIcon.transform.position = inventorySlots[itemIndex-1].transform.position;
+
+        Item curItem = getItemFromInventoryIndex(itemIndex-1);
+
+        if (!curItem)
+            return;
+
+        if (curItem.handIndex != -1)
+        {
+            heldItemModels[curItem.handIndex].SetActive(true);
         }
     }
 }
