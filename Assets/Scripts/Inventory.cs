@@ -96,6 +96,7 @@ public class Inventory : MonoBehaviour
         if (itemProcessed) return;
 
         // If no empty slots left
+        newItem.currentQuantity = leftOverQuantity;
         Debug.Log("Couldn't fit item into inventory");
     }
 
