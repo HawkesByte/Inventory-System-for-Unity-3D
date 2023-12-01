@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
-    public List<Item> items = new List<Item>();
+    public List<Item> inventorySlots = new List<Item>();
     public int inventorySpace = 10;
     public LayerMask itemLayer;
     public float pickUpDistance = 5f;
@@ -27,12 +27,7 @@ public class Inventory : MonoBehaviour
 
                 if (item)
                 {
-                    bool itemAdded = addItem(item);
-
-                    if (itemAdded)
-                    {
-                        Destroy(hit.collider.gameObject);
-                    }
+                    addItem(item);
                 }
             }
         }
@@ -43,29 +38,78 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    private bool addItem(Item item)
+    private void addItem(Item newItem)
     {
-        if (items.Count < inventorySpace)
+        int leftOverQuantity = newItem.currentQuantity;
+        bool itemProcessed = false;
+
+        // Loop through all slots
+        for (int i = 0; i < inventorySlots.Count; i++)
         {
-            items.Add(item);
-            Debug.Log("Item added: " + item.name);
-            return true;
+            Item invSlot = inventorySlots[i];
+
+            // Check if the slot holds an item with the same name as newItem
+            if (invSlot != null && newItem.itemName == invSlot.itemName)
+            {
+                // Calculate how much can be added to the current slot
+                int availableSpace = invSlot.maxQuantity - invSlot.currentQuantity;
+                int quantityToAdd = Mathf.Min(leftOverQuantity, availableSpace);
+
+                // Add to the current slot
+                invSlot.currentQuantity += quantityToAdd;
+                leftOverQuantity -= quantityToAdd;
+
+                // If leftOverQuantity is zero, the item is completely added
+                if (leftOverQuantity == 0)
+                {
+                    Debug.Log("Added " + newItem.currentQuantity + " " + newItem.itemName + "(s) to existing slot(s).");
+                    Destroy(newItem.gameObject); // Can destroy this gameobject as matching object now holds its quantity.
+                    itemProcessed = true;
+                    break;
+                }
+            }
         }
-        else
+
+        // If the item has been processed, exit the method
+        if (itemProcessed) return;
+
+        // If there is left over quantity, try to add it to a new slot
+        if (leftOverQuantity != 0)
         {
-            Debug.Log("Inventory full - cannot add item: " + item.name);
-            return false;
+            for (int i = 0; i < inventorySlots.Count; i++)
+            {
+                if (inventorySlots[i] == null)
+                {
+                    // Add to the empty slot
+                    inventorySlots[i] = newItem;
+                    inventorySlots[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
+
+                    Debug.Log("Added " + inventorySlots[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
+                    newItem.gameObject.SetActive(false); // Object is taking over the new slot. Must keep.
+                    itemProcessed = true;
+                    break;
+                }
+            }
         }
+
+        // If the item has been processed, exit the method
+        if (itemProcessed) return;
+
+        // If no empty slots left
+        Debug.Log("Couldn't fit item into inventory");
     }
 
     private void displayInventory()
     {
-        // toggleMouseLock();
-        foreach (Item item in items)
+        foreach (Item invSlot in inventorySlots)
         {
-            Debug.Log(item.name);
+            if (invSlot != null)
+            {
+                Debug.Log(invSlot.itemName + " | Quantity: " + invSlot.currentQuantity);
+            }
         }
     }
+
 
     private void toggleMouseLock()
     {
