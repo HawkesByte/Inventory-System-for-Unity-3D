@@ -69,7 +69,7 @@ public class Inventory : MonoBehaviour
         }
         else if (Input.GetMouseButtonUp(0) && previousSlotIndex != -1)
         {
-            dropUIItem();
+            HandleDragAndDrop();
         }
     }
 
@@ -187,51 +187,75 @@ public class Inventory : MonoBehaviour
         inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 0);
     }
 
-    private void dropUIItem()
+    private void HandleDragAndDrop()
     {
-        if (currentHoveredSlot != -1)
+        if (currentHoveredSlot == -1)
         {
-            if (inventorySlots[currentHoveredSlot].sprite != null) // Swap items
+            returnItemToPreviousSlot();
+        }
+        else
+        {
+            if (inventorySlots[currentHoveredSlot].sprite != null)
             {
-                Item curItem = getCurrentItemFromInventoryIndex(previousSlotIndex);
-                Item swapItem = getCurrentItemFromInventoryIndex(currentHoveredSlot);
-
-                inventorySlots[previousSlotIndex].sprite = inventorySlots[currentHoveredSlot].sprite;
-                inventorySlots[previousSlotIndex].color = new Color(1, 1, 1, 1);
-
-                inventorySlots[currentHoveredSlot].sprite = dragDropUIImage.sprite;
-                inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 1);
-
-                curItem.uiSlotIndex = currentHoveredSlot;
-                swapItem.uiSlotIndex = previousSlotIndex;
-
-                dragDropUIImage.sprite = null;
-                dragDropUIImage.enabled = false;
+                SwapItemsWithHoveredSlot();
             }
-            else // Drop Item
+            else
             {
-                inventorySlots[currentHoveredSlot].sprite = dragDropUIImage.sprite;
-                inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 1);
-                dragDropUIImage.sprite = null;
-                dragDropUIImage.enabled = false;
-
-                Item curItem = getCurrentItemFromInventoryIndex(previousSlotIndex);
-                curItem.uiSlotIndex = currentHoveredSlot;
+                dropItemIntoHoveredSlot();
             }
         }
-        else // Return Item
-        {
-            inventorySlots[previousSlotIndex].sprite = dragDropUIImage.sprite;
-            inventorySlots[previousSlotIndex].color = new Color(1, 1, 1, 1);
-            dragDropUIImage.sprite = null;
-            dragDropUIImage.enabled = false;
-        }
 
-        previousSlotIndex = -1;
+        resetDragAndDropState();
         updateInventory();
     }
 
-    private Item getCurrentItemFromInventoryIndex(int curInvIndex)
+    private void SwapItemsWithHoveredSlot()
+    {
+        Item draggedItem = getItemFromInventoryIndex(previousSlotIndex);
+        Item hoveredItem = getItemFromInventoryIndex(currentHoveredSlot);
+
+        swapSprites(previousSlotIndex, currentHoveredSlot);
+        draggedItem.uiSlotIndex = currentHoveredSlot;
+        hoveredItem.uiSlotIndex = previousSlotIndex;
+    }
+
+    private void dropItemIntoHoveredSlot()
+    {
+        Item draggedItem = getItemFromInventoryIndex(previousSlotIndex);
+        setSlotSprite(currentHoveredSlot, dragDropUIImage.sprite);
+        draggedItem.uiSlotIndex = currentHoveredSlot;
+    }
+
+    private void returnItemToPreviousSlot()
+    {
+        setSlotSprite(previousSlotIndex, dragDropUIImage.sprite);
+    }
+
+    private void resetDragAndDropState()
+    {
+        dragDropUIImage.sprite = null;
+        dragDropUIImage.enabled = false;
+        previousSlotIndex = -1;
+    }
+
+    private void setSlotSprite(int slotIndex, Sprite sprite)
+    {
+        inventorySlots[slotIndex].sprite = sprite;
+        inventorySlots[slotIndex].color = new Color(1, 1, 1, 1);
+    }
+
+    private void swapSprites(int index1, int index2)
+    {
+        Sprite tempSprite = inventorySlots[index1].sprite;
+        inventorySlots[index1].sprite = inventorySlots[index2].sprite;
+        inventorySlots[index2].sprite = tempSprite;
+
+        inventorySlots[index1].color = new Color(1, 1, 1, 1);
+        inventorySlots[index2].color = new Color(1, 1, 1, 1);
+    }
+
+
+    private Item getItemFromInventoryIndex(int curInvIndex)
     {
         foreach (Item i in heldItems)
         {
