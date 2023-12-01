@@ -1,361 +1,156 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Inventory : MonoBehaviour
 {
-    public List<Item> heldItems = new List<Item>();
-    private int inventorySpace = 0;
-    public float pickUpDistance = 5f;
+    [Header("UI")]
+    public GameObject inventory;
+    public List<UISlot> InventorySlots = new List<UISlot>();
+    public Image crosshair;
+    public Text itemHoverText;
+
+    [Header("Raycast")]
+    public float raycastDistance;
     public LayerMask itemLayer;
 
-    [Header("UI")]
-    public GameObject inventoryUI;
-    public List<Image> inventorySlots = new List<Image>();
-
-    public int currentHoveredSlot = -1;
-
-    [Header("DragAndDrop")]
-    public Image dragDropUIImage;
-    private int previousSlotIndex = -1;
-
-    [Header("Hotbar")]
-    public int hotbarSlotCount = 7; // Equal to the number of hotbar slots we have (Max 9).
-    public List<GameObject> heldItemModels = new List<GameObject>();
-    public Image selectedHotbarIcon;
-    private int activeHotbarSlot = 1;
-
-    private void Start()
+    public void Start()
     {
-        toggleMouseLock();
-        inventorySpace = inventorySlots.Count;
-        activateHotbarItem(activeHotbarSlot);
+        toggleInventory(false);
+
+        foreach (UISlot uiSlot in InventorySlots)
+        {
+            uiSlot.initialiseSlot();
+        }
     }
 
-    private void Update()
+    public void Update()
     {
-        dragDropUIImage.transform.position = Input.mousePosition;
+        itemRaycast(Input.GetMouseButtonDown(0));
+
+        if (Input.GetKeyDown(KeyCode.Q))
+            dropItem();
 
         if (Input.GetKeyDown(KeyCode.E))
-        {
-            Ray ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2f, Screen.height / 2f, 0f));
-            RaycastHit hit;
-
-            if (Physics.Raycast(ray, out hit, pickUpDistance, itemLayer))
-            {
-                Item item = hit.collider.GetComponent<Item>();
-
-                if (item)
-                {
-                    addItem(item);
-                    updateInventory();
-                    activateHotbarItem(activeHotbarSlot);
-                }
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.I))
-        {
-            displayInventory();
-
-            if (previousSlotIndex != -1) // Bug fix, cant close inventory while dragging an item.
-            {
-                HandleDragAndDrop();
-            }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Q) && currentHoveredSlot != -1) // Drop item.
-        {
-            if (inventorySlots[currentHoveredSlot].sprite != null)
-            {
-                dropItem();
-            }
-        }
-
-        if (Input.GetMouseButtonDown(0) && currentHoveredSlot != -1) // Drag and Drop
-        {
-            if (inventorySlots[currentHoveredSlot].sprite != null)
-            {
-                dragUIItem();
-                previousSlotIndex = currentHoveredSlot;
-            }
-        }
-        else if (Input.GetMouseButtonUp(0) && previousSlotIndex != -1)
-        {
-            HandleDragAndDrop();
-        }
-
-        for (int i = 1; i <= hotbarSlotCount; i++)
-        {
-            if (Input.GetKeyDown(i.ToString()))
-            {
-                activateHotbarItem(i);
-            }
-        }
-
-        float scrollWheelInput = Input.GetAxis("Mouse ScrollWheel");
-        if (scrollWheelInput > 0f)
-        {
-            // Scroll up, activate next hotbar item
-            activateNextHotbarItem();
-        }
-        else if (scrollWheelInput < 0f)
-        {
-            // Scroll down, activate previous hotbar item
-            activatePreviousHotbarItem();
-        }
+            toggleInventory(!inventory.activeInHierarchy);
     }
 
-    private void activateNextHotbarItem()
+    private void itemRaycast(bool hasClicked = false)
     {
-        activeHotbarSlot = (activeHotbarSlot % hotbarSlotCount) + 1;
-        activateHotbarItem(activeHotbarSlot);
-    }
+        itemHoverText.text = "";
+        Ray ray = Camera.main.ScreenPointToRay(crosshair.transform.position);
+        RaycastHit hit;
 
-    private void activatePreviousHotbarItem()
-    {
-        activeHotbarSlot = ((activeHotbarSlot - 2 + hotbarSlotCount) % hotbarSlotCount) + 1;
-        activateHotbarItem(activeHotbarSlot);
-    }
-
-    private void addItem(Item newItem)
-    {
-        int leftOverQuantity = newItem.currentQuantity;
-        bool itemProcessed = false;
-
-        // Loop through all slots
-        for (int i = 0; i < heldItems.Count; i++)
+        if (Physics.Raycast(ray, out hit, raycastDistance, itemLayer))
         {
-            Item invSlot = heldItems[i];
-
-            // Check if the slot holds an item with the same name as newItem
-            if (invSlot != null && newItem.itemName == invSlot.itemName)
+            if (hit.collider != null) // We can assume that this will only return true if we are looking at an item becuase of the "itemLayer" variable
             {
-                // Calculate how much can be added to the current slot
-                int availableSpace = invSlot.maxQuantity - invSlot.currentQuantity;
-                int quantityToAdd = Mathf.Min(leftOverQuantity, availableSpace);
-
-                // Add to the current slot
-                invSlot.currentQuantity += quantityToAdd;
-                leftOverQuantity -= quantityToAdd;
-
-                // If leftOverQuantity is zero, the item is completely added
-                if (leftOverQuantity == 0)
+                if (hasClicked)
                 {
-                    Debug.Log("Added " + newItem.currentQuantity + " " + newItem.itemName + "(s) to existing slot(s).");
-                    Destroy(newItem.gameObject); // Can destroy this gameobject as matching object now holds its quantity.
-                    itemProcessed = true;
-                    break;
-                }
-            }
-        }
-
-        // If the item has been processed, exit the method
-        if (itemProcessed) return;
-
-        // If there is left over quantity, try to add it to a new slot
-
-        if (heldItems.Count < inventorySpace)
-        {
-            heldItems.Add(null); // Create a new space
-        }
-
-        for (int i = 0; i < heldItems.Count; i++)
-        {
-            if (heldItems[i] == null)
-            {
-                // Add to the empty slot
-                heldItems[i] = newItem;
-                heldItems[i].currentQuantity = Mathf.Min(newItem.currentQuantity, newItem.maxQuantity);
-
-                Debug.Log("Added " + heldItems[i].currentQuantity + " " + newItem.itemName + "(s) to a new slot.");
-                newItem.gameObject.SetActive(false); // Object is taking over the new slot. Must keep.
-
-                for (int a = 0; a < inventorySlots.Count; a++)
-                {
-                    if (inventorySlots[a].sprite == null)
+                    // Pick Up Item
+                    Item newItem = hit.collider.GetComponent<Item>();
+                    if (newItem)
                     {
-                        newItem.uiSlotIndex = a;
-                        break;
+                        addItemToInventory(newItem);
                     }
                 }
+                else
+                {
+                    Item newItem = hit.collider.GetComponent<Item>();
 
-                itemProcessed = true;
-                break;
+                    if (newItem)
+                    {
+                        itemHoverText.text = newItem.name;
+                    }
+                }
             }
         }
-
-
-        // If the item has been processed, exit the method
-        if (itemProcessed) return;
-
-        // If no empty slots left
-        newItem.currentQuantity = leftOverQuantity;
-        Debug.Log("Couldn't fit item into inventory");
     }
 
-    private void dropItem()
+    private void addItemToInventory(Item itemToAdd) // Three stage plan - 1. Stack as much as possible. 2. Add to new slot. 3. No space, give up.
     {
-        Item itemToDrop = heldItems.Find(item => item != null && item.uiSlotIndex == currentHoveredSlot);
-        itemToDrop.gameObject.SetActive(true);
-        itemToDrop.transform.position = new Vector3(transform.position.x + 2f, transform.position.y + 2f, transform.position.z);
-
-        heldItems.Remove(itemToDrop);
-        inventorySlots[currentHoveredSlot].sprite = null;
-        inventorySlots[currentHoveredSlot].color = new Color(1,1,1,0);
-
-        updateInventory();
-    }
-
-    private void displayInventory()
-    {
-        inventoryUI.SetActive(!inventoryUI.activeInHierarchy);
-        toggleMouseLock();
-    }
-
-    private void updateInventory()
-    {
-        foreach (Image a in inventorySlots)
+        int leftoverQuantity = itemToAdd.currentQuantity;
+        UISlot openSlot = null;
+        for (int i = 0; i < InventorySlots.Count; i++) // Loop through every inventory slot
         {
-            a.transform.GetChild(0).GetComponent<Text>().text = "";
-        }
-
-        for (int i = 0; i < heldItems.Count; i++)
-        {
-            Item invSlot = heldItems[i];
-            if (invSlot != null)
+            Item heldItem = InventorySlots[i].getItem();
+            if (heldItem != null && itemToAdd.name == heldItem.name) // Meaning both these items are the same type.
             {
-                inventorySlots[invSlot.uiSlotIndex].sprite = invSlot.icon;
-                inventorySlots[invSlot.uiSlotIndex].color = new Color(1, 1, 1, 1);
-                inventorySlots[invSlot.uiSlotIndex].transform.GetChild(0).GetComponent<Text>().text = invSlot.currentQuantity.ToString();
+                int freeSpaceInSlot = heldItem.maxQuantity - heldItem.currentQuantity; // Calculate how much space this slot has until its full.
+                
+                if (freeSpaceInSlot >= leftoverQuantity) // We can add the entire quantity of the item. 
+                {
+                    heldItem.currentQuantity += leftoverQuantity;
+                    Destroy(itemToAdd.gameObject); // We can destroy this gameobject as its quantity is now stored within another item.
+                    return;
+                }
+                else // Add as much as possible to the current slot.
+                {
+                    heldItem.currentQuantity = heldItem.maxQuantity;
+                    leftoverQuantity -= freeSpaceInSlot; // Decrement quantityToAdd by the amount we where able to put into an existing item.
+                }
             }
-        }
-    }
-
-    private void dragUIItem()
-    {
-        dragDropUIImage.enabled = true;
-        dragDropUIImage.sprite = inventorySlots[currentHoveredSlot].sprite;
-        inventorySlots[currentHoveredSlot].sprite = null;
-        inventorySlots[currentHoveredSlot].color = new Color(1, 1, 1, 0);
-    }
-
-    private void HandleDragAndDrop()
-    {
-        if (currentHoveredSlot == -1)
-        {
-            returnItemToPreviousSlot();
-        }
-        else
-        {
-            if (inventorySlots[currentHoveredSlot].sprite != null)
+            else if(heldItem == null) 
             {
-                SwapItemsWithHoveredSlot();
-            }
-            else
-            {
-                dropItemIntoHoveredSlot();
+                if(!openSlot) // If open slot has not be assigned a slot yet.
+                    openSlot = InventorySlots[i]; // Take note that we have an open slot.
             }
         }
 
-        resetDragAndDropState();
-        updateInventory();
-    }
-
-    private void SwapItemsWithHoveredSlot()
-    {
-        Item draggedItem = getItemFromInventoryIndex(previousSlotIndex);
-        Item hoveredItem = getItemFromInventoryIndex(currentHoveredSlot);
-
-        swapSprites(previousSlotIndex, currentHoveredSlot);
-        draggedItem.uiSlotIndex = currentHoveredSlot;
-        hoveredItem.uiSlotIndex = previousSlotIndex;
-    }
-
-    private void dropItemIntoHoveredSlot()
-    {
-        Item draggedItem = getItemFromInventoryIndex(previousSlotIndex);
-        setSlotSprite(currentHoveredSlot, dragDropUIImage.sprite);
-        draggedItem.uiSlotIndex = currentHoveredSlot;
-    }
-
-    private void returnItemToPreviousSlot()
-    {
-        setSlotSprite(previousSlotIndex, dragDropUIImage.sprite);
-    }
-
-    private void resetDragAndDropState()
-    {
-        dragDropUIImage.sprite = null;
-        dragDropUIImage.enabled = false;
-        previousSlotIndex = -1;
-    }
-
-    private void setSlotSprite(int slotIndex, Sprite sprite)
-    {
-        inventorySlots[slotIndex].sprite = sprite;
-        inventorySlots[slotIndex].color = new Color(1, 1, 1, 1);
-    }
-
-    private void swapSprites(int index1, int index2)
-    {
-        Sprite tempSprite = inventorySlots[index1].sprite;
-        inventorySlots[index1].sprite = inventorySlots[index2].sprite;
-        inventorySlots[index2].sprite = tempSprite;
-
-        inventorySlots[index1].color = new Color(1, 1, 1, 1);
-        inventorySlots[index2].color = new Color(1, 1, 1, 1);
-    }
-
-
-    private Item getItemFromInventoryIndex(int curInvIndex)
-    {
-        foreach (Item i in heldItems)
+        if (leftoverQuantity > 0 && openSlot) // The new items quantity is still bigger than 0 meaning the item still exists.
         {
-            if (i.uiSlotIndex == curInvIndex)
-            {
-                return i;
-            }
+            openSlot.setItem(itemToAdd);
+            itemToAdd.currentQuantity = leftoverQuantity;
+            itemToAdd.gameObject.SetActive(false); // As opposed to destroying the item it now takes up its own slot, so to drop it later on we
+                                                   // should keep its gameobject.
         }
-
-        return null;
+        else // In the situation where we have leftover quantity but no open slots...
+        {
+            itemToAdd.currentQuantity = leftoverQuantity; // We tried to pick up the item but it didnt fit, we may have managed to get some of
+                                                          // its quantity into the inventory though so update its current quantity.
+        }
     }
 
-    private void toggleMouseLock()
+    private void toggleInventory(bool Enable)
     {
-        Cursor.visible = !Cursor.visible;
-
-        if (Cursor.lockState == CursorLockMode.Locked)
+        inventory.SetActive(Enable); // Toggles the inventory.
+        
+        if (inventory.activeInHierarchy)
         {
             Cursor.lockState = CursorLockMode.None;
-            transform.GetChild(0).GetComponent<FirstPersonLook>().sensitivity = 0;
+            Cursor.visible = true;
+
+            // Disable player camera movement (different depending on FPSController)
+            Camera.main.GetComponent<FirstPersonLook>().sensitivity = 0;
         }
         else
         {
             Cursor.lockState = CursorLockMode.Locked;
-            transform.GetChild(0).GetComponent<FirstPersonLook>().sensitivity = 2;
+            Cursor.visible = false;
+
+            // Disable player camera movement (different depending on FPSController)
+            Camera.main.GetComponent<FirstPersonLook>().sensitivity = 2;
+
+            foreach (UISlot a in InventorySlots) // If we close inventory without leaving a slot then we leave it hovered (need to find a nicer fix).
+            {
+                a.hovered = false;
+            }
         }
     }
 
-    private void activateHotbarItem(int itemIndex)
+    private void dropItem() // Drop an item into the world space
     {
-        foreach (GameObject a in heldItemModels)
+        for (int i = 0; i < InventorySlots.Count; i++) // Loop through every inventory slot
         {
-            a.SetActive(false);
-        }
-
-        selectedHotbarIcon.transform.position = inventorySlots[itemIndex-1].transform.position;
-
-        Item curItem = getItemFromInventoryIndex(itemIndex-1);
-
-        if (!curItem)
-            return;
-
-        if (curItem.handIndex != -1)
-        {
-            heldItemModels[curItem.handIndex].SetActive(true);
+            UISlot curSlot = InventorySlots[i];
+            if (curSlot.hovered && curSlot.getItem() != null)
+            {
+                curSlot.getItem().gameObject.SetActive(true);
+                curSlot.getItem().transform.position = new Vector3(transform.position.x + 2, transform.position.y + 1, transform.position.z);
+                curSlot.setItem(null);
+                break;
+            }
         }
     }
 }

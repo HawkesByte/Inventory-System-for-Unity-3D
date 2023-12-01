@@ -4,15 +4,50 @@ using UnityEngine.EventSystems;
 
 public class UISlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    public Inventory inv;
+    public bool hovered;
+    private Item heldItem;
 
-    public void OnPointerEnter(PointerEventData eventData)
+    private Color opaque = new Color(1, 1, 1, 1);
+    private Color transparent = new Color(1, 1, 1, 0);
+
+    private Image thisSlotImage;
+
+    public void initialiseSlot()
     {
-        inv.currentHoveredSlot = inv.inventorySlots.IndexOf(GetComponent<Image>());
+        thisSlotImage = gameObject.GetComponent<Image>();
+        thisSlotImage.sprite = null;
+        thisSlotImage.color = transparent;
+        setItem(null);
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    public void setItem(Item item)
     {
-        inv.currentHoveredSlot = -1;
+        heldItem = item;
+        
+        if (item != null)
+        {
+            thisSlotImage.sprite = heldItem.icon;
+            thisSlotImage.color = opaque;
+        }
+        else
+        {
+            thisSlotImage.sprite = null;
+            thisSlotImage.color = transparent;
+        }
+    }
+
+    public Item getItem()
+    {
+        return heldItem;
+    }
+
+    public void OnPointerEnter(PointerEventData pointerEventData)
+    {
+        hovered = true;
+    }
+
+    public void OnPointerExit(PointerEventData pointerEventData)
+    {
+        hovered = false;
     }
 }

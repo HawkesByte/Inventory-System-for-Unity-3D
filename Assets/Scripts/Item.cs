@@ -2,12 +2,9 @@ using UnityEngine;
 
 public class Item : MonoBehaviour
 {
-    public string itemName = "New Item";
-    public Sprite icon = null;
+    public new string name = "New Item";
+    public string description = "New Description";
+    public Sprite icon;
     public int currentQuantity = 1;
-    public int maxQuantity = 12;
-
-    public int uiSlotIndex;
-
-    public int handIndex = -1;
+    public int maxQuantity = 16;
 }
