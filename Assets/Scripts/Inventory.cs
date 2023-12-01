@@ -25,12 +25,13 @@ public class Inventory : MonoBehaviour
     public int hotbarSlotCount = 7; // Equal to the number of hotbar slots we have (Max 9).
     public List<GameObject> heldItemModels = new List<GameObject>();
     public Image selectedHotbarIcon;
-    private int activeHotbarSlot;
+    private int activeHotbarSlot = 1;
 
     private void Start()
     {
         toggleMouseLock();
         inventorySpace = inventorySlots.Count;
+        activateHotbarItem(activeHotbarSlot);
     }
 
     private void Update()
@@ -50,6 +51,7 @@ public class Inventory : MonoBehaviour
                 {
                     addItem(item);
                     updateInventory();
+                    activateHotbarItem(activeHotbarSlot);
                 }
             }
         }
