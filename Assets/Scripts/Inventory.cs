@@ -27,7 +27,10 @@ public class Inventory : MonoBehaviour
 
     [Header("Equippable Items")]
     public List<GameObject> equippableItems = new List<GameObject>();
+    // Add armour later
 
+    [Header("Crafting")]
+    public List<Recipe> itemRecipes = new List<Recipe>();
 
     public void Start()
     {
@@ -278,5 +281,92 @@ public class Inventory : MonoBehaviour
                 equippableItems[hotbarSlot.getItem().equippableItemIndex].SetActive(true); // Enable the object pointed to by the item in the horbar slot.
             }
         }
+    }
+
+    public void craftItem(string itemName) // Use this function to craft a gameobject or item.
+    {
+        foreach (Recipe recipe in itemRecipes)
+        {
+            if (recipe.createdItemPrefab.GetComponent<Item>().name == itemName)
+            {
+                bool haveAllIngredients = true;
+                for(int i = 0; i < recipe.requiredIngredients.Count; i++)
+                {
+                    if (haveAllIngredients)
+                    {
+                        haveAllIngredients = haveIngredient(recipe.requiredIngredients[i].itemName, recipe.requiredIngredients[i].requiredQuantity);
+                    }
+                }
+
+                if (haveAllIngredients) // If have all ingredients is still equal to true
+                {
+                    for (int i = 0; i < recipe.requiredIngredients.Count; i++) // Remove all the required ingredients
+                    {
+                        removeIngredient(recipe.requiredIngredients[i].itemName, recipe.requiredIngredients[i].requiredQuantity);
+                    }
+
+                    GameObject createdItem = Instantiate(recipe.createdItemPrefab,itemDropLocation.position, Quaternion.identity); // Instantiate the creafted item.
+                    createdItem.GetComponent<Item>().currentQuantity = recipe.quantityProduced; // Set the crafted items quantity to the recipes production quantity.
+
+                    addItemToInventory(createdItem.GetComponent<Item>()); // Try to add the item to the inventory.
+                }
+                break;
+            }
+        }
+    }
+
+    private void removeIngredient(string itemName, int quantity)
+    {
+        if (!haveIngredient(itemName, quantity)) // Ensure we actually have the item and quantity required to remove.
+            return;
+
+        int remainingQuantity = quantity;
+
+        foreach (UISlot curSlot in allInventorySlots)
+        {
+            Item item = curSlot.getItem();
+
+            if (item != null && item.name == itemName)
+            {
+                if (item.currentQuantity >= remainingQuantity)
+                {
+                    // If the current slot has enough quantity to cover the remaining quantity,
+                    // reduce the quantity and exit the loop.
+                    item.currentQuantity -= remainingQuantity;
+
+                    if (item.currentQuantity == 0)
+                    {
+                        curSlot.setItem(null);
+                    }
+
+                    updateAllInventorySlots(); // Update UI after removing the ingredient.
+                    return;
+                }
+                else
+                {
+                    // If the current slot has less quantity than needed, remove the item from the slot
+                    // and update the remaining quantity.
+                    remainingQuantity -= item.currentQuantity;
+                    curSlot.setItem(null);
+                }
+            }
+        }
+    }
+
+    private bool haveIngredient(string itemName, int quantity)
+    {
+        int foundQuantity = 0;
+        foreach (UISlot CurSlot in allInventorySlots) // Loop through all the slots
+        {
+            if (CurSlot.getItem().name == itemName) // Find all the items that match up with what we are looking for.
+            {
+                foundQuantity += CurSlot.getItem().currentQuantity;
+
+                if (foundQuantity >= quantity) // Check to see if found quantity is bigger than the quantity we are looking for.
+                    return true; // If so return true.
+            }
+        }
+
+        return false;
     }
 }

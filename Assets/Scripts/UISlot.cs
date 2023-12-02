@@ -56,10 +56,14 @@ public class UISlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public void updateData()
     {
-        if(heldItem != null)
+        if (heldItem != null)
+        {
             thisSlotQuantityText.text = heldItem.currentQuantity.ToString();
+        }
         else
+        {
             thisSlotQuantityText.text = "";
+        }
     }
 
     public void OnPointerEnter(PointerEventData pointerEventData)
