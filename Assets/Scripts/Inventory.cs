@@ -5,9 +5,13 @@ using UnityEngine.UI;
 
 public class Inventory : MonoBehaviour
 {
+    [Header("Item Lists")]
+    public List<UISlot> inventorySlots = new List<UISlot>();
+    public List<UISlot> hotbarSlots = new List<UISlot>();
+    private List<UISlot> allInventorySlots = new List<UISlot>();
+
     [Header("UI")]
     public GameObject inventory;
-    public List<UISlot> InventorySlots = new List<UISlot>();
     public Image crosshair;
     public Text itemHoverText;
 
@@ -15,11 +19,20 @@ public class Inventory : MonoBehaviour
     public float raycastDistance;
     public LayerMask itemLayer;
 
+    [Header("Drag and Drop")]
+    public Image dragIconImage;
+    private Item currentDraggedItem;
+    private int currentDragSlotIndex = -1; // The index of the slot the item we are trying to drag was in before lifted.
+
+
     public void Start()
     {
         toggleInventory(false);
 
-        foreach (UISlot uiSlot in InventorySlots)
+        allInventorySlots.AddRange(hotbarSlots); // Fill the all slots list with our inventory slots and hotbar slots.
+        allInventorySlots.AddRange(inventorySlots);
+
+        foreach (UISlot uiSlot in allInventorySlots)
         {
             uiSlot.initialiseSlot();
         }
@@ -27,19 +40,31 @@ public class Inventory : MonoBehaviour
 
     public void Update()
     {
-        itemRaycast(Input.GetMouseButtonDown(0));
+        if (!inventory.activeInHierarchy)
+            itemRaycast(Input.GetMouseButtonDown(0)); // Pick up item (or if we dont click, raycast to check if we are looking at an item).
 
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (inventory.activeInHierarchy && Input.GetMouseButtonDown(0)) // If we click on a inventory slot while the inventory is active.
+        {
+            dragInventoryIcon();
+        }
+        else if (currentDragSlotIndex != -1 && Input.GetMouseButtonUp(0) || currentDragSlotIndex != -1 && !inventory.activeInHierarchy) // If we lift the mouse click we try to drop the held item.
+        {
+            dropInventoryIcon();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Q)) // Drop an item out of the inventory.
             dropItem();
 
-        if (Input.GetKeyDown(KeyCode.E))
+        if (Input.GetKeyDown(KeyCode.E)) // Activate the inventory.
             toggleInventory(!inventory.activeInHierarchy);
+
+        dragIconImage.transform.position = Input.mousePosition; // Update drag icon image.
     }
 
     private void itemRaycast(bool hasClicked = false)
     {
         itemHoverText.text = "";
-        Ray ray = Camera.main.ScreenPointToRay(crosshair.transform.position);
+        Ray ray = Camera.main.ScreenPointToRay(crosshair.transform.position); // Raycast out from the camera to the crosshair (Centre of the screen).
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit, raycastDistance, itemLayer))
@@ -72,13 +97,13 @@ public class Inventory : MonoBehaviour
     {
         int leftoverQuantity = itemToAdd.currentQuantity;
         UISlot openSlot = null;
-        for (int i = 0; i < InventorySlots.Count; i++) // Loop through every inventory slot
+        for (int i = 0; i < allInventorySlots.Count; i++) // Loop through every inventory slot
         {
-            Item heldItem = InventorySlots[i].getItem();
+            Item heldItem = allInventorySlots[i].getItem();
             if (heldItem != null && itemToAdd.name == heldItem.name) // Meaning both these items are the same type.
             {
                 int freeSpaceInSlot = heldItem.maxQuantity - heldItem.currentQuantity; // Calculate how much space this slot has until its full.
-                
+
                 if (freeSpaceInSlot >= leftoverQuantity) // We can add the entire quantity of the item. 
                 {
                     heldItem.currentQuantity += leftoverQuantity;
@@ -91,10 +116,10 @@ public class Inventory : MonoBehaviour
                     leftoverQuantity -= freeSpaceInSlot; // Decrement quantityToAdd by the amount we where able to put into an existing item.
                 }
             }
-            else if(heldItem == null) 
+            else if (heldItem == null)
             {
-                if(!openSlot) // If open slot has not be assigned a slot yet.
-                    openSlot = InventorySlots[i]; // Take note that we have an open slot.
+                if (!openSlot) // If open slot has not be assigned a slot yet.
+                    openSlot = allInventorySlots[i]; // Take note that we have an open slot.
             }
         }
 
@@ -110,12 +135,17 @@ public class Inventory : MonoBehaviour
             itemToAdd.currentQuantity = leftoverQuantity; // We tried to pick up the item but it didnt fit, we may have managed to get some of
                                                           // its quantity into the inventory though so update its current quantity.
         }
+
+        foreach (UISlot a in allInventorySlots) // Update all the slots in the inventory to display the correct quantity.
+        {
+            a.updateData();
+        }
     }
 
     private void toggleInventory(bool Enable)
     {
         inventory.SetActive(Enable); // Toggles the inventory.
-        
+
         if (inventory.activeInHierarchy)
         {
             Cursor.lockState = CursorLockMode.None;
@@ -132,19 +162,19 @@ public class Inventory : MonoBehaviour
             // Disable player camera movement (different depending on FPSController)
             Camera.main.GetComponent<FirstPersonLook>().sensitivity = 2;
 
-            foreach (UISlot a in InventorySlots) // If we close inventory without leaving a slot then we leave it hovered (need to find a nicer fix).
+            foreach (UISlot a in allInventorySlots) // If we close inventory without leaving a slot then we leave it hovered (need to find a nicer fix).
             {
                 a.hovered = false;
             }
         }
     }
 
-    private void dropItem() // Drop an item into the world space
+    private void dropItem() // Drop an item into the world space.
     {
-        for (int i = 0; i < InventorySlots.Count; i++) // Loop through every inventory slot
+        for (int i = 0; i < allInventorySlots.Count; i++) // Loop through every inventory slot.
         {
-            UISlot curSlot = InventorySlots[i];
-            if (curSlot.hovered && curSlot.getItem() != null)
+            UISlot curSlot = allInventorySlots[i];
+            if (curSlot.hovered && curSlot.hasItem())
             {
                 curSlot.getItem().gameObject.SetActive(true);
                 curSlot.getItem().transform.position = new Vector3(transform.position.x + 2, transform.position.y + 1, transform.position.z);
@@ -152,5 +182,65 @@ public class Inventory : MonoBehaviour
                 break;
             }
         }
+    }
+
+    private void dragInventoryIcon() // Gives us the ability to move objects around in the inventory.
+    {
+        for (int i = 0; i < allInventorySlots.Count; i++) // Loop through every inventory slot.
+        {
+            UISlot curSlot = allInventorySlots[i];
+            if (curSlot.hovered && curSlot.hasItem())
+            {
+                currentDragSlotIndex = i; // Update the current drag slot index variable.
+
+                currentDraggedItem = curSlot.getItem(); // Get the item from the current slot.
+                dragIconImage.sprite = currentDraggedItem.icon; // Set the drag icon image sprite to the current items icon.
+                dragIconImage.color = new Color(1, 1, 1, 1); // Make drag icon image visible.
+
+                curSlot.setItem(null); // Remove the item from the current slot.
+            }
+        }
+    }
+
+    private void dropInventoryIcon()
+    {
+        // Reset the drag item variables
+        dragIconImage.sprite = null; // Set the drag icon image sprite to null.
+        dragIconImage.color = new Color(1, 1, 1, 0); // Make drag icon image invisible.
+
+        for (int i = 0; i < allInventorySlots.Count; i++) // Loop through every inventory slot.
+        {
+            UISlot curSlot = allInventorySlots[i];
+            if (curSlot.hovered) // Find the curslot we are trying to drop the item into.
+            {
+                if (curSlot.hasItem()) // Check to see if the slot is empty, if it isn't we need to swap the two items.
+                {
+                    Item itemToSwap = curSlot.getItem(); // Record the item in the slot we are trying to drop the new item into.
+
+                    curSlot.setItem(currentDraggedItem); // Replace that item with the new item we are dragging.
+
+                    allInventorySlots[currentDragSlotIndex].setItem(itemToSwap); // Set the old slots item as the one we just swapped place with.
+
+                    resetDragVariables();
+                    return;
+                }
+                else // If the slot is empty we can just move the item there.
+                {
+                    curSlot.setItem(currentDraggedItem);
+                    resetDragVariables();
+                    return;
+                }
+            }
+        }
+        
+        // If we get to here it means we've dropped the item where there is no slot to place it into. Put it back where it was before.
+        allInventorySlots[currentDragSlotIndex].setItem(currentDraggedItem);
+        resetDragVariables();
+    }
+
+    private void resetDragVariables()
+    {
+        currentDraggedItem = null;
+        currentDragSlotIndex = -1;
     }
 }
