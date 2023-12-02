@@ -18,11 +18,15 @@ public class Inventory : MonoBehaviour
     [Header("Raycast")]
     public float raycastDistance;
     public LayerMask itemLayer;
+    public Transform itemDropLocation;
 
     [Header("Drag and Drop")]
     public Image dragIconImage;
     private Item currentDraggedItem;
     private int currentDragSlotIndex = -1; // The index of the slot the item we are trying to drag was in before lifted.
+
+    [Header("Equippable Items")]
+    public List<GameObject> equippableItems = new List<GameObject>();
 
 
     public void Start()
@@ -57,6 +61,14 @@ public class Inventory : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.E)) // Activate the inventory.
             toggleInventory(!inventory.activeInHierarchy);
+
+        for (int i = 1; i < hotbarSlots.Count + 1; i++)
+        {
+            if (Input.GetKeyDown(i.ToString())) // If we get any of the number keys on the keyboard down (trying to access an item in the hotbar).
+            {
+                enableHotbarItem(i - 1);
+            }
+        }
 
         dragIconImage.transform.position = Input.mousePosition; // Update drag icon image.
     }
@@ -108,6 +120,7 @@ public class Inventory : MonoBehaviour
                 {
                     heldItem.currentQuantity += leftoverQuantity;
                     Destroy(itemToAdd.gameObject); // We can destroy this gameobject as its quantity is now stored within another item.
+                    updateAllInventorySlots();
                     return;
                 }
                 else // Add as much as possible to the current slot.
@@ -136,6 +149,11 @@ public class Inventory : MonoBehaviour
                                                           // its quantity into the inventory though so update its current quantity.
         }
 
+        updateAllInventorySlots();
+    }
+
+    private void updateAllInventorySlots()
+    {
         foreach (UISlot a in allInventorySlots) // Update all the slots in the inventory to display the correct quantity.
         {
             a.updateData();
@@ -177,7 +195,7 @@ public class Inventory : MonoBehaviour
             if (curSlot.hovered && curSlot.hasItem())
             {
                 curSlot.getItem().gameObject.SetActive(true);
-                curSlot.getItem().transform.position = new Vector3(transform.position.x + 2, transform.position.y + 1, transform.position.z);
+                curSlot.getItem().transform.position = itemDropLocation.position;
                 curSlot.setItem(null);
                 break;
             }
@@ -242,5 +260,23 @@ public class Inventory : MonoBehaviour
     {
         currentDraggedItem = null;
         currentDragSlotIndex = -1;
+    }
+
+    private void enableHotbarItem(int hotbarIndex)
+    {
+        foreach (GameObject a in equippableItems)
+        {
+            a.SetActive(false); // Set all the equippable items to be inactive.
+        }
+
+        UISlot hotbarSlot = hotbarSlots[hotbarIndex];
+
+        if (hotbarSlot.hasItem()) // If the hotbar slot we have clicked has an item...
+        {
+            if (hotbarSlot.getItem().equippableItemIndex != -1) // And that item is equippable (which we are determining by if its equippableIndex isn't -1.
+            {
+                equippableItems[hotbarSlot.getItem().equippableItemIndex].SetActive(true); // Enable the object pointed to by the item in the horbar slot.
+            }
+        }
     }
 }
