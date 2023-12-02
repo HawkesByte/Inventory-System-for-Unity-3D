@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class Inventory : MonoBehaviour
 {
@@ -31,6 +32,10 @@ public class Inventory : MonoBehaviour
 
     [Header("Crafting")]
     public List<Recipe> itemRecipes = new List<Recipe>();
+
+    [Header("Save/Load")]
+    public string saveFileName = "inventorySave.json";
+    public List<GameObject> allItemPrefabs = new List<GameObject>();
 
     public void Start()
     {
@@ -74,6 +79,13 @@ public class Inventory : MonoBehaviour
         }
 
         dragIconImage.transform.position = Input.mousePosition; // Update drag icon image.
+
+
+        if (Input.GetKeyDown(KeyCode.P)) // Save
+            saveInventory();
+
+        if (Input.GetKeyDown(KeyCode.O)) // Load
+            loadInventory();
     }
 
     private void itemRaycast(bool hasClicked = false)
@@ -108,8 +120,16 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    private void addItemToInventory(Item itemToAdd) // Three stage plan - 1. Stack as much as possible. 2. Add to new slot. 3. No space, give up.
+    private void addItemToInventory(Item itemToAdd, int overrideIndex = -1) // Three stage plan - 1. Stack as much as possible. 2. Add to new slot. 3. No space, give up.
     {
+        if (overrideIndex != -1) // We are loading from the save
+        {
+            allInventorySlots[overrideIndex].setItem(itemToAdd); // Directly set the item in the appropriate slot.
+            itemToAdd.gameObject.SetActive(false);
+            updateAllInventorySlots();
+            return;
+        }
+
         int leftoverQuantity = itemToAdd.currentQuantity;
         UISlot openSlot = null;
         for (int i = 0; i < allInventorySlots.Count; i++) // Loop through every inventory slot
@@ -369,4 +389,98 @@ public class Inventory : MonoBehaviour
 
         return false;
     }
+
+    public void saveInventory()
+    {
+        Debug.Log("Saving...");
+        // Create a data object to store the inventory information
+        InventoryData data = new InventoryData();
+
+        // Fill in the data object with the necessary information
+        // Example: Save the names and quantities of items in each slot
+        foreach (UISlot slot in allInventorySlots)
+        {
+            Item item = slot.getItem();
+            if (item != null)
+            {
+                ItemData itemData = new ItemData(item.name, item.currentQuantity, allInventorySlots.IndexOf(slot));
+                data.slotData.Add(itemData);
+            }
+        }
+
+        // Convert the data object to JSON format
+        string jsonData = JsonUtility.ToJson(data);
+
+        // Save the JSON data to a file
+        File.WriteAllText(saveFileName, jsonData);
+    }
+
+    public void loadInventory()
+    {
+        if (File.Exists(saveFileName))
+        {
+            Debug.Log("Loading...");
+            // Read the JSON data from the file
+            string jsonData = File.ReadAllText(saveFileName);
+
+            // Convert the JSON data back to a data object
+            InventoryData data = JsonUtility.FromJson<InventoryData>(jsonData);
+
+            // Clear the existing inventory
+            clearInventory();
+
+            // Load the inventory information from the data object
+            foreach (ItemData itemData in data.slotData)
+            {
+                // Find the prefab corresponding to the item name
+                GameObject itemPrefab = allItemPrefabs.Find(prefab => prefab.GetComponent<Item>().name == itemData.itemName);
+
+                if (itemPrefab != null)
+                {
+                    // Instantiate the item prefab
+                    GameObject createdItem = Instantiate(itemPrefab, itemDropLocation.position, Quaternion.identity);
+                    Item item = createdItem.GetComponent<Item>();
+
+                    // Set the item's quantity
+                    item.currentQuantity = itemData.quantity;
+
+                    // Add the item to the inventory
+                    addItemToInventory(item, itemData.slotIndex); // Make use of the addItem funcions ovveride slot position by passing in the itemData.slotIndex.
+                }
+            }
+
+            // Update the UI
+            updateAllInventorySlots();
+        }
+    }
+
+    private void clearInventory()
+    {
+        foreach (UISlot slot in allInventorySlots)
+        {
+            slot.setItem(null);
+        }
+    }
+
+}
+
+[System.Serializable]
+public class ItemData
+{
+    public string itemName;
+    public int quantity;
+    public int slotIndex;
+
+    public ItemData(string itemName, int quantity, int slotIndex)
+    {
+        this.itemName = itemName;
+        this.quantity = quantity;
+        this.slotIndex = slotIndex;
+    }
+}
+
+[System.Serializable]
+public class InventoryData
+{
+    public List<ItemData> slotData = new List<ItemData>();
 }
