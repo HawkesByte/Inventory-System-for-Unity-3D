@@ -25,6 +25,7 @@ public class Inventory : MonoBehaviour
     public Image dragIconImage;
     private Item currentDraggedItem;
     private int currentDragSlotIndex = -1; // The index of the slot the item we are trying to drag was in before lifted.
+    public GameObject itemInfoBox;
 
     [Header("Equippable Items")]
     public List<GameObject> equippableItems = new List<GameObject>();
@@ -46,7 +47,7 @@ public class Inventory : MonoBehaviour
 
         foreach (UISlot uiSlot in allInventorySlots)
         {
-            uiSlot.initialiseSlot();
+            uiSlot.initialiseSlot(this);
         }
     }
 
@@ -378,7 +379,7 @@ public class Inventory : MonoBehaviour
         int foundQuantity = 0;
         foreach (UISlot CurSlot in allInventorySlots) // Loop through all the slots
         {
-            if (CurSlot.getItem().name == itemName) // Find all the items that match up with what we are looking for.
+            if (CurSlot.getItem() != null && CurSlot.getItem().name == itemName) // Find all the items that match up with what we are looking for.
             {
                 foundQuantity += CurSlot.getItem().currentQuantity;
 
@@ -462,6 +463,19 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    public void setHoveredSlotInfo(Item item, Vector3 Pos)
+    {
+        itemInfoBox.SetActive(true);
+        itemInfoBox.transform.position = new Vector2(Pos.x + 125f, Pos.y + 50f); // Update the position of the item info box.
+        itemInfoBox.transform.GetChild(0).GetComponent<Text>().text = item.name + " x" + item.currentQuantity; // Item Name + Quantity Text.
+        itemInfoBox.transform.GetChild(0).GetComponent<Text>().color = item.getItemRarity(); // Assign the colour of the item info box title.
+        itemInfoBox.transform.GetChild(1).GetComponent<Text>().text = item.description; // Set description.
+    }
+
+    public void hideHoveredSlotInfo()
+    {
+        itemInfoBox.SetActive(false);
+    }
 }
 
 [System.Serializable]

@@ -49,11 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   name: Blue Item
-  description: New Description
+  description: This ones blue.
   icon: {fileID: 21300000, guid: 25737b65ab0a559418430eb88a0c6b3a, type: 3}
   currentQuantity: 1
   maxQuantity: 16
   equippableItemIndex: 3
+  itemRarity: 0
 --- !u!33 &5017402427430518274
 MeshFilter:
   m_ObjectHideFlags: 0

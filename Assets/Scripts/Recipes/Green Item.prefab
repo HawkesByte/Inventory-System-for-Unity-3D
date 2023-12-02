@@ -49,11 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   name: Green Item
-  description: New Description
+  description: Almost looks like a grass block from minecraft.. almost.
   icon: {fileID: 21300000, guid: 8f4d4d1a113a4534ca84e5595a8e4768, type: 3}
   currentQuantity: 1
   maxQuantity: 16
   equippableItemIndex: 2
+  itemRarity: 0
 --- !u!33 &656595833520439936
 MeshFilter:
   m_ObjectHideFlags: 0

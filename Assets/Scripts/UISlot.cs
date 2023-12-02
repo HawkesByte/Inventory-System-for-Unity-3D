@@ -13,7 +13,21 @@ public class UISlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private Image thisSlotImage;
     private Text thisSlotQuantityText;
 
-    public void initialiseSlot()
+    private Inventory inventory;
+
+    public enum ArmourType
+    {
+        None,
+        Head,
+        Chest,
+        Backpack,
+        Legs,
+        Feet
+    }
+
+    public ArmourType armourType = ArmourType.None;
+
+    public void initialiseSlot(Inventory inv)
     {
         thisSlotImage = gameObject.GetComponent<Image>();
         thisSlotQuantityText = transform.GetChild(0).GetComponent<Text>();
@@ -21,6 +35,8 @@ public class UISlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         thisSlotImage.sprite = null;
         thisSlotImage.color = transparent;
         setItem(null);
+
+        inventory = inv;
     }
 
     public void setItem(Item item)
@@ -69,10 +85,16 @@ public class UISlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public void OnPointerEnter(PointerEventData pointerEventData)
     {
         hovered = true;
+
+        if (inventory && hasItem()) // If we hover over the inventory and have an item.
+            inventory.setHoveredSlotInfo(getItem(), transform.position); // Pass in the data
     }
 
     public void OnPointerExit(PointerEventData pointerEventData)
     {
         hovered = false;
+
+        if (inventory) // If we exit the slot
+            inventory.hideHoveredSlotInfo();
     }
 }

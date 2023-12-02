@@ -49,11 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   name: Red Item
-  description: New Description
+  description: An amazing red cube that does nothing for us.
   icon: {fileID: 21300000, guid: a7e5e82a8bd987c41a90cb163538b2b6, type: 3}
   currentQuantity: 1
   maxQuantity: 16
   equippableItemIndex: 0
+  itemRarity: 0
 --- !u!33 &7016119487815385788
 MeshFilter:
   m_ObjectHideFlags: 0

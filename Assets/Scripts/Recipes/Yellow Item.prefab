@@ -49,11 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   name: Yellow Item
-  description: New Description
+  description: A yellow cube, what did you expect?
   icon: {fileID: 21300000, guid: 941770634c9bd134b8c7be89636b3830, type: 3}
   currentQuantity: 1
   maxQuantity: 16
   equippableItemIndex: 1
+  itemRarity: 0
 --- !u!33 &7788816254763451346
 MeshFilter:
   m_ObjectHideFlags: 0
